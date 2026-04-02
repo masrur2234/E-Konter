@@ -310,17 +310,18 @@ export default function TransactionsPage() {
 
       {/* Transaction Table */}
       <div className="flex-1 overflow-hidden rounded-xl border bg-card">
-        <ScrollArea className="h-full">
+        <div className="overflow-x-auto">
+          <div className="min-w-[520px]">
           <Table>
             <TableHeader>
-              <TableRow>
+              <TableRow className="hover:bg-transparent">
                 <TableHead>No. Invoice</TableHead>
                 <TableHead className="hidden sm:table-cell">Tanggal</TableHead>
                 <TableHead className="text-center hidden md:table-cell">Item</TableHead>
                 <TableHead className="text-right">Total</TableHead>
                 <TableHead className="hidden md:table-cell">Metode Bayar</TableHead>
                 <TableHead className="text-center">Status</TableHead>
-                <TableHead className="text-right">Aksi</TableHead>
+                <TableHead className="text-right w-[80px] sticky right-0 bg-card">Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -392,7 +393,7 @@ export default function TransactionsPage() {
                           {statusConfig.label}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right sticky right-0 bg-card shadow-[-4px_0_4px_0_rgba(0,0,0,0.05)]">
                         <Button
                           variant="ghost"
                           size="sm"
@@ -412,7 +413,8 @@ export default function TransactionsPage() {
               )}
             </TableBody>
           </Table>
-        </ScrollArea>
+          </div>
+        </div>
       </div>
 
       {/* Pagination */}
