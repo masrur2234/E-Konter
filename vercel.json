@@ -3,5 +3,11 @@
   "framework": "nextjs",
   "buildCommand": "npx prisma generate && next build",
   "installCommand": "npm install",
-  "outputDirectory": ".next"
+  "outputDirectory": ".next",
+
+  "functions": {
+    "app/api/**/route.ts": {
+      "regions": ["sin1"]
+    }
+  }
 }
