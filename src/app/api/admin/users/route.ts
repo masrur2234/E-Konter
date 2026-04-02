@@ -1,3 +1,5 @@
+export const preferredRegion = "sin1";
+
 import { db } from '@/lib/db';
 import { getUserFromRequest, successResponse, errorResponse } from '@/lib/auth';
 
