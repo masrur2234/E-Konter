@@ -1,0 +1,18 @@
+{
+  "name": "KasirPOS - Sistem Kasir Modern",
+  "short_name": "KasirPOS",
+  "description": "Sistem Point of Sale untuk Counter Pulsa dan Toko",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#059669",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
