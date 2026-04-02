@@ -12,6 +12,7 @@ import {
   X,
   Loader2,
   Filter,
+  ChevronRight,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -45,7 +46,6 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import {
-  Table,
   TableBody,
   TableCell,
   TableHead,
@@ -344,19 +344,20 @@ export default function ProductsPage() {
       </div>
 
       {/* Products Table */}
-      <div className="flex-1 overflow-hidden rounded-xl border bg-card">
-        <ScrollArea className="h-full">
-          <Table>
+      <div className="flex-1 min-h-0 rounded-xl border bg-card">
+        <div className="h-full overflow-x-auto overflow-y-auto overscroll-x-contain" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y' }}>
+          <div className="min-w-[720px]">
+          <table className="w-full caption-bottom text-sm">
             <TableHeader>
-              <TableRow>
-                <TableHead className="w-[250px]">Nama</TableHead>
-                <TableHead className="hidden md:table-cell">Tipe</TableHead>
-                <TableHead className="hidden lg:table-cell">Kategori</TableHead>
-                <TableHead className="hidden md:table-cell text-right">Harga Beli</TableHead>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="w-[200px]">Nama</TableHead>
+                <TableHead>Tipe</TableHead>
+                <TableHead className="hidden sm:table-cell">Kategori</TableHead>
+                <TableHead className="hidden sm:table-cell text-right">Harga Beli</TableHead>
                 <TableHead className="text-right">Harga Jual</TableHead>
                 <TableHead className="text-center">Stok</TableHead>
                 <TableHead className="text-center">Status</TableHead>
-                <TableHead className="text-right">Aksi</TableHead>
+                <TableHead className="text-right w-[110px] sticky right-0 bg-card z-10 relative">Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -397,15 +398,15 @@ export default function ProductsPage() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        <Badge variant="outline" className="text-xs">
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs whitespace-nowrap">
                           {typeLabels[product.type] || product.type}
                         </Badge>
                       </TableCell>
-                      <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
+                      <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
                         {product.category?.name || '-'}
                       </TableCell>
-                      <TableCell className="hidden md:table-cell text-right text-sm">
+                      <TableCell className="hidden sm:table-cell text-right text-sm">
                         {formatCurrency(product.buyPrice)}
                       </TableCell>
                       <TableCell className="text-right font-medium">
@@ -438,23 +439,23 @@ export default function ProductsPage() {
                           </Badge>
                         )}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right sticky right-0 bg-card z-10 relative before:absolute before:inset-y-0 before:-left-3 before:w-3 before:bg-gradient-to-r before:from-transparent before:to-card">
                         <div className="flex items-center justify-end gap-1">
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            className="h-9 w-9"
                             onClick={() => openEditForm(product)}
                           >
-                            <Pencil className="h-3.5 w-3.5" />
+                            <Pencil className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-destructive hover:text-destructive"
+                            className="h-9 w-9 text-destructive hover:text-destructive"
                             onClick={() => setDeleteTarget(product)}
                           >
-                            <Trash2 className="h-3.5 w-3.5" />
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </TableCell>
@@ -463,8 +464,15 @@ export default function ProductsPage() {
                 })
               )}
             </TableBody>
-          </Table>
-        </ScrollArea>
+          </table>
+          </div>
+        </div>
+        {/* Mobile scroll hint */}
+        <div className="flex items-center justify-center gap-1.5 border-t px-3 py-1.5 text-xs text-muted-foreground md:hidden animate-pulse">
+          <ChevronRight className="h-3.5 w-3.5" />
+          <span>Geser ke kanan untuk Aksi</span>
+          <ChevronRight className="h-3.5 w-3.5" />
+        </div>
       </div>
 
       {/* Product Form Dialog */}
@@ -769,4 +777,3 @@ export default function ProductsPage() {
     </div>
   )
 }
-
