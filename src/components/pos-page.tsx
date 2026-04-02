@@ -20,7 +20,6 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
@@ -28,17 +27,8 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Sheet,
   SheetContent,
-  SheetHeader,
   SheetTitle,
-  SheetFooter,
 } from '@/components/ui/sheet'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { apiGet, apiPost } from '@/lib/api'
 import { formatCurrency } from '@/lib/utils/format'
 import { cn } from '@/lib/utils'
@@ -231,9 +221,9 @@ export default function PosPage() {
 
   // Cart content (shared between desktop and mobile)
   const cartContent = (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col overflow-hidden">
       {/* Cart Header */}
-      <div className="flex items-center justify-between border-b px-4 py-3">
+      <div className="flex shrink-0 items-center justify-between border-b px-4 py-3">
         <div className="flex items-center gap-2">
           <ShoppingCart className="h-5 w-5 text-primary" />
           <h3 className="font-semibold">Keranjang</h3>
@@ -246,7 +236,7 @@ export default function PosPage() {
       </div>
 
       {/* Scrollable area: customer search + cart items + totals + payment */}
-      <ScrollArea className="flex-1">
+      <div className="flex-1 min-h-0 overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
         {/* Customer Search */}
         <div className="border-b px-4 py-3">
           <div className="relative">
@@ -493,7 +483,7 @@ export default function PosPage() {
           {/* Spacer for sticky button */}
           <div className="h-2" />
         </div>
-      </ScrollArea>
+      </div>
 
       {/* Sticky Checkout Button - always visible at bottom */}
       <div className="shrink-0 border-t bg-background p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
@@ -675,10 +665,8 @@ export default function PosPage() {
 
       {/* Mobile Cart Sheet */}
       <Sheet open={cartOpen} onOpenChange={setCartOpen}>
-        <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl p-0">
-          <SheetHeader className="border-b px-4 py-3 sr-only">
-            <SheetTitle>Keranjang Belanja</SheetTitle>
-          </SheetHeader>
+        <SheetContent side="bottom" className="h-[90vh] gap-0 rounded-t-2xl p-0">
+          <SheetTitle className="sr-only">Keranjang Belanja</SheetTitle>
           {cartContent}
         </SheetContent>
       </Sheet>
