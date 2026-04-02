@@ -11,7 +11,73 @@ interface ApiResponse<T = unknown> {
 
 interface RequestOptions extends Omit<RequestInit, 'body'> {
   body?: unknown
+  /** Skip cache — force fresh request */
+  noCache?: boolean
 }
+
+// ==================== SIMPLE MEMORY CACHE ====================
+// Caches GET responses for 15 seconds.
+// Mutation calls (POST/PUT/DELETE) invalidate related cache automatically.
+
+interface CacheEntry<T = unknown> {
+  data: ApiResponse<T>
+  timestamp: number
+}
+
+class ApiCache {
+  private cache = new Map<string, CacheEntry>()
+  private defaultTtl: number
+
+  constructor(ttlMs = 15_000) {
+    this.defaultTtl = ttlMs
+  }
+
+  get<T>(key: string): ApiResponse<T> | null {
+    const entry = this.cache.get(key)
+    if (!entry) return null
+    if (Date.now() - entry.timestamp > this.defaultTtl) {
+      this.cache.delete(key)
+      return null
+    }
+    return entry.data as ApiResponse<T>
+  }
+
+  set<T>(key: string, data: ApiResponse<T>): void {
+    this.cache.set(key, { data, timestamp: Date.now() })
+  }
+
+  /** Invalidate all entries matching a prefix (e.g. '/api/products') */
+  invalidate(prefix?: string): void {
+    if (!prefix) {
+      this.cache.clear()
+      return
+    }
+    for (const key of this.cache.keys()) {
+      if (key.startsWith(prefix)) {
+        this.cache.delete(key)
+      }
+    }
+  }
+
+  /** Clean up expired entries */
+  cleanup(): void {
+    const now = Date.now()
+    for (const [key, entry] of this.cache.entries()) {
+      if (now - entry.timestamp > this.defaultTtl) {
+        this.cache.delete(key)
+      }
+    }
+  }
+}
+
+const apiCache = new ApiCache(15_000) // 15 second cache
+
+// Auto-cleanup every 60 seconds
+if (typeof window !== 'undefined') {
+  setInterval(() => apiCache.cleanup(), 60_000)
+}
+
+// ==================== API CLIENT ====================
 
 class ApiClient {
   private baseUrl: string
@@ -20,19 +86,11 @@ class ApiClient {
     this.baseUrl = baseUrl
   }
 
-  /**
-   * Get the auth token from Zustand store.
-   * Must be called outside of React components.
-   */
   private getToken(): string | null {
-    // Access the store state directly (safe for non-React usage)
     const state = useStore.getState()
     return state.token
   }
 
-  /**
-   * Build headers with auth token and content type.
-   */
   private buildHeaders(custom?: HeadersInit): HeadersInit {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -47,29 +105,39 @@ class ApiClient {
     return headers
   }
 
-  /**
-   * Handle 401 responses by clearing auth state and redirecting to login.
-   */
   private handleUnauthorized(): void {
     const state = useStore.getState()
     if (state.isAuthenticated) {
       state.logout()
-      // Redirect to login page
       if (typeof window !== 'undefined') {
         window.location.href = '/'
       }
     }
   }
 
-  /**
-   * Core request handler with error handling.
-   */
+  private buildCacheKey(method: string, url: string, body?: unknown): string {
+    if (body) {
+      return `${method}:${url}:${JSON.stringify(body)}`
+    }
+    return `${method}:${url}`
+  }
+
   private async request<T>(
     endpoint: string,
     options: RequestOptions = {}
   ): Promise<ApiResponse<T>> {
-    const { body, headers: customHeaders, ...restOptions } = options
+    const { body, headers: customHeaders, noCache, ...restOptions } = options
+    const method = restOptions.method?.toUpperCase() || 'GET'
     const url = `${this.baseUrl}${endpoint}`
+    const cacheKey = this.buildCacheKey(method, url, body)
+
+    // For GET requests, check cache first (unless noCache is true)
+    if (method === 'GET' && !noCache) {
+      const cached = apiCache.get<T>(cacheKey)
+      if (cached) {
+        return cached
+      }
+    }
 
     try {
       const response = await fetch(url, {
@@ -78,13 +146,11 @@ class ApiClient {
         body: body ? JSON.stringify(body) : undefined,
       })
 
-      // Handle unauthorized
       if (response.status === 401) {
         this.handleUnauthorized()
         return { error: 'Sesi Anda telah berakhir. Silakan login kembali.' }
       }
 
-      // Handle non-OK responses
       if (!response.ok) {
         let errorMessage = `Request gagal dengan status ${response.status}`
         try {
@@ -96,28 +162,40 @@ class ApiClient {
         return { error: errorMessage }
       }
 
-      // Handle 204 No Content
       if (response.status === 204) {
-        return { data: undefined as T, success: true }
+        const result: ApiResponse<T> = { data: undefined as T, success: true }
+        if (method === 'GET' && !noCache) {
+          apiCache.set(cacheKey, result)
+        }
+        return result
       }
 
-      // Parse successful response
-      // API routes return { success: true, data: <payload> } or { success: false, error: <msg> }
       const json = await response.json()
 
-      // If the API returns a structured response with success/error, unwrap it
+      let result: ApiResponse<T>
+
       if (typeof json === 'object' && json !== null && 'success' in json) {
         if (json.success === false) {
-          return { error: json.error || json.message || 'Terjadi kesalahan' }
+          result = { error: json.error || json.message || 'Terjadi kesalahan' }
+        } else {
+          result = { data: json.data as T, success: true }
         }
-        // Return the inner data payload directly
-        return { data: json.data as T, success: true }
+      } else {
+        result = { data: json as T, success: true }
       }
 
-      // For responses without success wrapper, return as-is
-      return { data: json as T, success: true }
+      // Cache successful GET responses
+      if (method === 'GET' && !noCache && result.success) {
+        apiCache.set(cacheKey, result)
+      }
+
+      // Invalidate cache on mutations (POST/PUT/PATCH/DELETE)
+      if (method !== 'GET' && result.success) {
+        apiCache.invalidate(endpoint.split('?')[0])
+      }
+
+      return result
     } catch (error) {
-      // Handle network errors
       if (error instanceof TypeError && error.message === 'Failed to fetch') {
         return { error: 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.' }
       }
@@ -127,16 +205,10 @@ class ApiClient {
     }
   }
 
-  /**
-   * GET request.
-   */
   async get<T = unknown>(endpoint: string, options?: RequestOptions): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { ...options, method: 'GET' })
   }
 
-  /**
-   * POST request.
-   */
   async post<T = unknown>(
     endpoint: string,
     body?: unknown,
@@ -145,9 +217,6 @@ class ApiClient {
     return this.request<T>(endpoint, { ...options, method: 'POST', body })
   }
 
-  /**
-   * PUT request.
-   */
   async put<T = unknown>(
     endpoint: string,
     body?: unknown,
@@ -156,9 +225,6 @@ class ApiClient {
     return this.request<T>(endpoint, { ...options, method: 'PUT', body })
   }
 
-  /**
-   * PATCH request.
-   */
   async patch<T = unknown>(
     endpoint: string,
     body?: unknown,
@@ -167,14 +233,16 @@ class ApiClient {
     return this.request<T>(endpoint, { ...options, method: 'PATCH', body })
   }
 
-  /**
-   * DELETE request.
-   */
   async delete<T = unknown>(
     endpoint: string,
     options?: RequestOptions
   ): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { ...options, method: 'DELETE' })
+  }
+
+  /** Clear all cached responses, or by prefix */
+  clearCache(prefix?: string): void {
+    apiCache.invalidate(prefix)
   }
 }
 
@@ -196,3 +264,7 @@ export const apiPatch = <T = unknown>(url: string, body?: unknown, options?: Req
 
 export const apiDelete = <T = unknown>(url: string, options?: RequestOptions) =>
   api.delete<T>(url, options)
+
+/** Force refresh — skip cache for next GET request */
+export const apiRefresh = <T = unknown>(url: string, options?: RequestOptions) =>
+  api.get<T>(url, { ...options, noCache: true })
