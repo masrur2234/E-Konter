@@ -245,56 +245,57 @@ export default function PosPage() {
         </div>
       </div>
 
-      {/* Customer Search */}
-      <div className="border-b px-4 py-3">
-        <div className="relative">
-          <User className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Cari pelanggan..."
-            className="pl-8"
-            value={customerSearch}
-            onChange={(e) => setCustomerSearch(e.target.value)}
-          />
-        </div>
-        {customerSearch && customers.length > 0 && (
-          <div className="mt-2 max-h-32 overflow-y-auto rounded-md border bg-background">
-            {customers.map((c) => (
-              <button
-                key={c.id}
-                className={cn(
-                  'flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent',
-                  selectedCustomer?.id === c.id && 'bg-accent'
-                )}
-                onClick={() => {
-                  setSelectedCustomer(c)
-                  setCustomerSearch('')
-                }}
-              >
-                <span>{c.name}</span>
-                {c.phone && (
-                  <span className="text-xs text-muted-foreground">{c.phone}</span>
-                )}
-              </button>
-            ))}
-          </div>
-        )}
-        {selectedCustomer && (
-          <div className="mt-2 flex items-center justify-between rounded-md bg-primary/5 px-3 py-1.5">
-            <span className="text-sm font-medium">{selectedCustomer.name}</span>
-            <button
-              onClick={() => {
-                setSelectedCustomer(null)
-              }}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Cart Items */}
+      {/* Scrollable area: customer search + cart items + totals + payment */}
       <ScrollArea className="flex-1">
+        {/* Customer Search */}
+        <div className="border-b px-4 py-3">
+          <div className="relative">
+            <User className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Cari pelanggan..."
+              className="pl-8"
+              value={customerSearch}
+              onChange={(e) => setCustomerSearch(e.target.value)}
+            />
+          </div>
+          {customerSearch && customers.length > 0 && (
+            <div className="mt-2 max-h-32 overflow-y-auto rounded-md border bg-background">
+              {customers.map((c) => (
+                <button
+                  key={c.id}
+                  className={cn(
+                    'flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent',
+                    selectedCustomer?.id === c.id && 'bg-accent'
+                  )}
+                  onClick={() => {
+                    setSelectedCustomer(c)
+                    setCustomerSearch('')
+                  }}
+                >
+                  <span>{c.name}</span>
+                  {c.phone && (
+                    <span className="text-xs text-muted-foreground">{c.phone}</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+          {selectedCustomer && (
+            <div className="mt-2 flex items-center justify-between rounded-md bg-primary/5 px-3 py-1.5">
+              <span className="text-sm font-medium">{selectedCustomer.name}</span>
+              <button
+                onClick={() => {
+                  setSelectedCustomer(null)
+                }}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Cart Items */}
         {cart.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
             <ShoppingBag className="mb-3 h-12 w-12 opacity-30" />
@@ -365,11 +366,9 @@ export default function PosPage() {
             </AnimatePresence>
           </div>
         )}
-      </ScrollArea>
 
-      {/* Cart Footer - Totals & Checkout */}
-      <div className="border-t bg-background">
-        <div className="space-y-2 p-4">
+        {/* Totals & Payment Section (now scrollable) */}
+        <div className="space-y-3 border-t bg-background px-4 pt-3 pb-4">
           {/* Discount */}
           <div className="flex items-center gap-2">
             <Label htmlFor="discount" className="text-sm shrink-0 w-16">
@@ -491,31 +490,36 @@ export default function PosPage() {
             </motion.div>
           )}
 
-          {/* Checkout Button */}
-          <Button
-            className="w-full"
-            size="lg"
-            disabled={
-              cart.length === 0 ||
-              (paymentMethod === 'cash' &&
-                (parseFloat(paidAmount) || 0) < total) ||
-              checkingOut
-            }
-            onClick={handleCheckout}
-          >
-            {checkingOut ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Memproses...
-              </>
-            ) : (
-              <>
-                <Check className="mr-2 h-4 w-4" />
-                Bayar {formatCurrency(total)}
-              </>
-            )}
-          </Button>
+          {/* Spacer for sticky button */}
+          <div className="h-2" />
         </div>
+      </ScrollArea>
+
+      {/* Sticky Checkout Button - always visible at bottom */}
+      <div className="shrink-0 border-t bg-background p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <Button
+          className="w-full"
+          size="lg"
+          disabled={
+            cart.length === 0 ||
+            (paymentMethod === 'cash' &&
+              (parseFloat(paidAmount) || 0) < total) ||
+            checkingOut
+          }
+          onClick={handleCheckout}
+        >
+          {checkingOut ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Memproses...
+            </>
+          ) : (
+            <>
+              <Check className="mr-2 h-4 w-4" />
+              Bayar {formatCurrency(total)}
+            </>
+          )}
+        </Button>
       </div>
     </div>
   )
