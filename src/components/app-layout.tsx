@@ -354,17 +354,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [activeStoreId, setNotifications])
 
-  // Fetch on mount and every 30 seconds
+    // Fetch on mount and every 30 seconds (NOT on every page change)
   useEffect(() => {
     fetchNotifications()
     const interval = setInterval(fetchNotifications, 30000)
     return () => clearInterval(interval)
   }, [fetchNotifications])
-
-  // Re-fetch when navigating to a new page
-  useEffect(() => {
-    fetchNotifications()
-  }, [currentPage, fetchNotifications])
 
   // Handle notification click
   const handleNotificationClick = (notification: Notification) => {
